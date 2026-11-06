@@ -37,5 +37,9 @@ Route::middleware('auth.token')->group(function () {
         Route::post('/members', [MemberController::class, 'store']);
 
         Route::post('/loans', [LoanController::class, 'store']);
+        Route::get('/loans', [LoanController::class, 'index']);
+        Route::get('/loans/overdue', [LoanController::class, 'overdue']); // before /loans/{id}
+        Route::get('/loans/{id}', [LoanController::class, 'show']);
+        Route::post('/loans/{loanId}/items/{itemId}/return', [LoanController::class, 'returnItem']);
     });
 });

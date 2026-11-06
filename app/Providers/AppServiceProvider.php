@@ -5,7 +5,9 @@ namespace App\Providers;
 use App\Application\Books\SetCoverService;
 use App\Application\Ports\BookRepository;
 use App\Application\Ports\CoverStorage;
+use App\Application\Ports\LoanQueries;
 use App\Application\Ports\LoanRepository;
+use App\Infrastructure\Persistence\DbLoanQueries;
 use App\Application\Ports\MemberRepository;
 use App\Infrastructure\Persistence\DbLoanRepository;
 use App\Infrastructure\Persistence\DbMemberRepository;
@@ -38,6 +40,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(BookRepository::class, DbBookRepository::class);
         $this->app->singleton(MemberRepository::class, DbMemberRepository::class);
         $this->app->singleton(LoanRepository::class, DbLoanRepository::class);
+        $this->app->singleton(LoanQueries::class, DbLoanQueries::class);
         $this->app->singleton(CoverStorage::class, fn () => new DiskCoverStorage(config('library.covers_dir')));
         $this->app->when(SetCoverService::class)->needs('$maxBytes')->give(fn () => (int) config('library.cover_max_bytes'));
         $this->app->singleton(TokenIssuer::class, fn ($app) => new JwtTokenIssuer(
