@@ -1,0 +1,20 @@
+# Development runner for the API. The database is NOT here: it is the empty
+# PostgreSQL 16 started by the infra repo; this joins its network.
+name: manager-library-api
+
+services:
+  api:
+    build: .
+    image: manager-library-api:dev
+    container_name: manager-library-api
+    volumes:
+      - .:/app
+    ports:
+      - "${API_PORT:-8000}:8000"
+    networks:
+      - library-net
+
+networks:
+  library-net:
+    name: manager-library_library-net
+    external: true
