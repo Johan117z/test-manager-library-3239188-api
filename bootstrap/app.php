@@ -1,5 +1,9 @@
 <?php
 
+use App\Domain\Shared\BusinessRuleViolation;
+use App\Http\Errors\ApiErrorRenderer;
+use App\Http\Middleware\AuthenticateToken;
+use App\Http\Middleware\RequireRole;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -14,10 +18,20 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        $middleware->alias([
+            'auth.token' => AuthenticateToken::class,
+            'role' => RequireRole::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        $exceptions->shouldRenderJsonWhen(
-            fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
-        );
+        // Never log request input: passwords must not reach the logs (RNF-3).
+        $exceptions->dontFlash(['password', 'password_confirmation']);
+        // Business outcomes (409, 422, ...) are answers, not failures: they are not logged.
+        $exceptions->dontReport([BusinessRuleViolation::class]);
+
+        $exceptions->render(function (Throwable $e, Request $request) {
+            if ($request->is('api/*')) {
+                return ApiErrorRenderer::render($e);
+            }
+        });
     })->create();
