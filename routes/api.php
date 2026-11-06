@@ -4,6 +4,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BookController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\CoverController;
+use App\Http\Controllers\MemberController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -27,5 +28,11 @@ Route::middleware('auth.token')->group(function () {
         Route::delete('/books/{id}', [BookController::class, 'destroy']);
         Route::put('/books/{id}/cover', [CoverController::class, 'update']);
         Route::delete('/books/{id}/cover', [CoverController::class, 'destroy']);
+    });
+
+    Route::middleware('role:admin,librarian')->group(function () {
+        Route::get('/members', [MemberController::class, 'index']);
+        Route::get('/members/{id}', [MemberController::class, 'show']);
+        Route::post('/members', [MemberController::class, 'store']);
     });
 });
