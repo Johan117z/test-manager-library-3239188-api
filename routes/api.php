@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\BookController;
+use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -12,4 +14,14 @@ Route::post('/auth/login', [AuthController::class, 'login']);
 // Everything else requires a token (CA-01.3).
 Route::middleware('auth.token')->group(function () {
     Route::post('/users', [UserController::class, 'store'])->middleware('role:admin');
+
+    Route::get('/categories', [CategoryController::class, 'index']);
+
+    Route::get('/books', [BookController::class, 'index']);
+    Route::get('/books/{id}', [BookController::class, 'show']);
+    Route::middleware('role:admin')->group(function () {
+        Route::post('/books', [BookController::class, 'store']);
+        Route::put('/books/{id}', [BookController::class, 'update']);
+        Route::delete('/books/{id}', [BookController::class, 'destroy']);
+    });
 });
