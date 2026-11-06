@@ -3,6 +3,7 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BookController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\CoverController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -19,9 +20,12 @@ Route::middleware('auth.token')->group(function () {
 
     Route::get('/books', [BookController::class, 'index']);
     Route::get('/books/{id}', [BookController::class, 'show']);
+    Route::get('/books/{id}/cover', [CoverController::class, 'show']);
     Route::middleware('role:admin')->group(function () {
         Route::post('/books', [BookController::class, 'store']);
         Route::put('/books/{id}', [BookController::class, 'update']);
         Route::delete('/books/{id}', [BookController::class, 'destroy']);
+        Route::put('/books/{id}/cover', [CoverController::class, 'update']);
+        Route::delete('/books/{id}/cover', [CoverController::class, 'destroy']);
     });
 });

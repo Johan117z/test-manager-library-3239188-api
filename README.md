@@ -48,12 +48,51 @@ The schema belongs to the Laravel migrations (ADR-001). `database/migrations/202
 
 Laravel's own `migrations` bookkeeping table is kept in `public`, so schema `library` contains exactly the six tables.
 
+## Startup
+
+The container runs `php artisan migrate --force`, then `php artisan library:ensure-admin` (creates the admin from
+`ADMIN_USERNAME` / `ADMIN_PASSWORD` if missing; never changes an existing user; fails if they are not set), then the server.
+
+## Structure
+
+| Layer | Folder | Depends on |
+|---|---|---|
+| Domain | `app/Domain` (`Book`, `Isbn`, `Category`, `User`, `Role`, `BusinessRuleViolation`, `Uuid`) | plain PHP only |
+| Application | `app/Application` (use cases + `Ports/`) | Domain |
+| Adapters | `app/Infrastructure` (PostgreSQL, Argon2id, JWT, disk covers), `app/Http` (controllers, middleware, error renderer) | Application |
+| Composition | `app/Providers/AppServiceProvider.php` | the only place a port meets its adapter |
+
 ## Task evidence
 
 | Task | Evidence | Where |
 |---|---|---|
 | T-01 | `GET /api/v1/health` returns `{"status":"ok"}` without a token | `tests/Feature/HealthTest.php` |
 | T-02 | `data-model.md` §10 queries match: columns and types, no DEFAULT, FKs, CHECKs, indexes, seeded categories; the engine rejects rows that break the CHECKs; ISBN unique only among active books | `tests/Feature/InitialMigrationTest.php` |
+| T-14 | Argon2id hash; JWT HS256 with 8 h, only `sub`/`role`; expired or tampered tokens rejected; the password never appears in responses or `laravel.log` (RNF-3) | `tests/Unit/Security/SecurityAdaptersTest.php`, `AuthApiTest::test_password_never_appears_in_responses_or_logs` |
+| T-07 | HU-01 and HU-02 against fakes; same over HTTP: 401 without token, 403 wrong role, `"Ana "` -> `ana`, 409 duplicate, 422 for role `admin` | `tests/Unit/Auth/AuthServicesTest.php`, `tests/Feature/AuthApiTest.php` |
+| T-17 | On an empty database the startup command creates the admin, who can log in; idempotent; fails without credentials | `tests/Feature/InitialAdminTest.php` (also checked live: dropped schema, `docker compose up`, login as admin) |
+| T-08 | HU-03 and HU-04 against fakes; same over HTTP: contract shape, 13-digit ISBN, 409 `ISBN_TAKEN`, total change moves available and never below 0, soft delete (404 after, row kept, ISBN reusable, 409 with open loans), search by text/category, order by title, pagination with total, size capped at 50 | `tests/Unit/Books/BookServicesTest.php`, `tests/Feature/BooksApiTest.php` |
+| T-15 | 2 MB PNG accepted and served back; 3 MB -> 422; no cover -> `cover_key` null and GET 404; type checked by content; replace/remove delete the old binary after saving | `tests/Feature/CoversApiTest.php` (also checked live with real multipart uploads) |
+
+## Decisions made while implementing
+
+Besides `team/spec-gaps-and-decisions.md`:
+
+| Topic | Decision |
+|---|---|
+| 401 for a missing, invalid or expired token | The contract only lists `INVALID_CREDENTIALS` for 401, so it is reused (with its own message) instead of inventing a code. |
+| `GET /categories` body | Plain JSON array of `{id, name}` ordered by name (the contract does not give the shape; it is not paginated). |
+| Unknown `category_id` | On create/update: 422 `VALIDATION_ERROR` on `category_id`. As a search filter: just no results. |
+| Malformed ids in the URL | 404 `NOT_FOUND`, the same as an unknown id. |
+| Cover upload method | PHP does not parse `multipart/form-data` on PUT. Clients send **`POST /books/{id}/cover` with form field `_method=PUT`** (Laravel method spoofing), which reaches the PUT route. A raw PUT with multipart answers 422 (`file` required). |
+| `DELETE /books/{id}/cover` | 204; also 204 when the book had no cover. `PUT` returns 200 with the book. |
+| Cover keys | 32 random hex chars, file stored under `COVERS_DIR`; the key is validated so it can never be a path. |
+| Logging | Business errors (409/422/...) are not logged, and PHP runs with `zend.exception_ignore_args=On`, so arguments such as passwords never reach stack traces. A test found the leak before this was set. |
+| Concurrency on books | `available_copies` is written as an atomic delta (`available_copies + n`) so editing a book never overwrites a concurrent loan; the CHECK is the last barrier. |
+
+## Known limitations
+
+- A true `PUT` with a multipart body is not parsed (see cover upload above). PHP 8.4's `request_parse_body()` would fix it; the image is PHP 8.3.
 
 ## Secrets
 

@@ -2,7 +2,10 @@
 
 namespace App\Providers;
 
+use App\Application\Books\SetCoverService;
 use App\Application\Ports\BookRepository;
+use App\Application\Ports\CoverStorage;
+use App\Infrastructure\Storage\DiskCoverStorage;
 use App\Application\Ports\CategoryRepository;
 use App\Application\Ports\Clock;
 use App\Infrastructure\Persistence\DbBookRepository;
@@ -29,6 +32,8 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(UserRepository::class, DbUserRepository::class);
         $this->app->scoped(CategoryRepository::class, DbCategoryRepository::class);
         $this->app->singleton(BookRepository::class, DbBookRepository::class);
+        $this->app->singleton(CoverStorage::class, fn () => new DiskCoverStorage(config('library.covers_dir')));
+        $this->app->when(SetCoverService::class)->needs('$maxBytes')->give(fn () => (int) config('library.cover_max_bytes'));
         $this->app->singleton(TokenIssuer::class, fn ($app) => new JwtTokenIssuer(
             $app->make(Clock::class),
             config('library.jwt_secret'),
