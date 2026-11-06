@@ -9,6 +9,8 @@ use App\Application\Ports\LoanQueries;
 use App\Application\Ports\LoanRepository;
 use App\Infrastructure\Persistence\DbLoanQueries;
 use App\Application\Ports\MemberRepository;
+use App\Application\Ports\ReportReader;
+use App\Infrastructure\Persistence\DbReportReader;
 use App\Infrastructure\Persistence\DbLoanRepository;
 use App\Infrastructure\Persistence\DbMemberRepository;
 use App\Infrastructure\Storage\DiskCoverStorage;
@@ -41,6 +43,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(MemberRepository::class, DbMemberRepository::class);
         $this->app->singleton(LoanRepository::class, DbLoanRepository::class);
         $this->app->singleton(LoanQueries::class, DbLoanQueries::class);
+        $this->app->singleton(ReportReader::class, DbReportReader::class);
         $this->app->singleton(CoverStorage::class, fn () => new DiskCoverStorage(config('library.covers_dir')));
         $this->app->when(SetCoverService::class)->needs('$maxBytes')->give(fn () => (int) config('library.cover_max_bytes'));
         $this->app->singleton(TokenIssuer::class, fn ($app) => new JwtTokenIssuer(
