@@ -7,6 +7,9 @@ services:
     build: .
     image: manager-library-api:dev
     container_name: manager-library-api
+    environment:
+      # Parallel requests in php artisan serve (needed for the concurrent last-copy check).
+      PHP_CLI_SERVER_WORKERS: 4
     volumes:
       - .:/app
     ports:
