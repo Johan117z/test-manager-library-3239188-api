@@ -15,4 +15,5 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 WORKDIR /app
 
 EXPOSE 8000
-CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000"]
+# Startup (T-17): migrations, then the initial admin from the environment, then the server.
+CMD ["sh", "-c", "php artisan migrate --force && php artisan library:ensure-admin && php artisan serve --host=0.0.0.0 --port=8000"]
