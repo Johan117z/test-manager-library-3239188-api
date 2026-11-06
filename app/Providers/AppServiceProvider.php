@@ -2,23 +2,32 @@
 
 namespace App\Providers;
 
+use App\Application\Ports\Clock;
+use App\Application\Ports\PasswordHasher;
+use App\Application\Ports\TokenIssuer;
+use App\Infrastructure\Security\Argon2idPasswordHasher;
+use App\Infrastructure\Security\JwtTokenIssuer;
+use App\Infrastructure\SystemClock;
 use Illuminate\Support\ServiceProvider;
 
+/**
+ * Single composition point (constitution, article III): the only place where a
+ * port meets its adapter.
+ */
 class AppServiceProvider extends ServiceProvider
 {
-    /**
-     * Register any application services.
-     */
     public function register(): void
     {
-        //
+        $this->app->singleton(Clock::class, SystemClock::class);
+        $this->app->singleton(PasswordHasher::class, Argon2idPasswordHasher::class);
+        $this->app->singleton(TokenIssuer::class, fn ($app) => new JwtTokenIssuer(
+            $app->make(Clock::class),
+            config('library.jwt_secret'),
+            (int) config('library.jwt_ttl'),
+        ));
     }
 
-    /**
-     * Bootstrap any application services.
-     */
     public function boot(): void
     {
-        //
     }
 }

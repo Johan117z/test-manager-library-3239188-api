@@ -26,6 +26,10 @@
         <env name="DB_CONNECTION" value="pgsql" force="true"/>
         <env name="DB_DATABASE" value="library_test" force="true"/>
         <env name="DB_URL" value=""/>
+        <env name="JWT_SECRET" value="phpunit-only-secret-0123456789abcdef0123456789" force="true"/>
+        <env name="ADMIN_USERNAME" value="admin" force="true"/>
+        <env name="ADMIN_PASSWORD" value="phpunit-admin-pass" force="true"/>
+        <env name="COVERS_DIR" value="storage/framework/testing/covers" force="true"/>
         <env name="MAIL_MAILER" value="array"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>
